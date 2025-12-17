@@ -1,72 +1,73 @@
 import tkinter as tk
 from tkinter import messagebox
-from utils import clear_window
-from menu import main_menu
+from datetime import datetime
 
-def wellness_page(root):
-    clear_window(root)
+from storage import load_wellness, save_wellness
 
-    # --- Beautiful Gradient Background ---
-    root.configure(bg="#c9d6ff")
 
-    # --- Title ---
-    tk.Label(root, text="Daily Wellness Log", font=("Arial", 22, "bold"),
-             bg="#c9d6ff", fg="#2d2d2d").pack(pady=20)
+def wellness_page(root, main_menu):
+    # =====================================================
+    # CLEAR WINDOW
+    # =====================================================
+    for widget in root.winfo_children():
+        widget.destroy()
 
-    # --- Modern Center Card ---
-    card = tk.Frame(root, bg="white", bd=0, relief="ridge")
-    card.pack(pady=20, padx=20, fill="both", expand=True)
+    root.configure(bg="#eef2f7")
 
-    card.configure(highlightbackground="#d0d0d0", highlightthickness=1)
-    card.pack_propagate(False)
+    container = tk.Frame(root, bg="#eef2f7")
+    container.pack(expand=True, fill="both")
 
-    # --- Inputs inside card ---
-    input_frame = tk.Frame(card, bg="white")
-    input_frame.pack(pady=20)
+    tk.Label(container, text="Daily Wellness Log 🌱",
+             font=("Segoe UI", 26, "bold"),
+             bg="#eef2f7").pack(pady=20)
 
-    # Mood
-    tk.Label(input_frame, text="Mood Today:", bg="white", font=("Arial", 12)).grid(row=0, column=0, padx=10, pady=10, sticky="e")
-    mood_entry = tk.Entry(input_frame, width=35, font=("Arial", 11), relief="groove", bd=2)
-    mood_entry.grid(row=0, column=1, pady=10)
+    form = tk.Frame(container, bg="white", padx=40, pady=30)
+    form.pack()
 
-    # Sleep
-    tk.Label(input_frame, text="Hours of Sleep:", bg="white", font=("Arial", 12)).grid(row=1, column=0, padx=10, pady=10, sticky="e")
-    sleep_entry = tk.Entry(input_frame, width=35, font=("Arial", 11), relief="groove", bd=2)
-    sleep_entry.grid(row=1, column=1, pady=10)
+    mood_var = tk.IntVar(value=5)
+    stress_var = tk.IntVar(value=5)
+    sleep_var = tk.IntVar(value=5)
+    energy_var = tk.IntVar(value=5)
 
-    # Meals
-    tk.Label(input_frame, text="Meals Summary:", bg="white", font=("Arial", 12)).grid(row=2, column=0, padx=10, pady=10, sticky="e")
-    meal_entry = tk.Entry(input_frame, width=35, font=("Arial", 11), relief="groove", bd=2)
-    meal_entry.grid(row=2, column=1, pady=10)
+    def slider_row(text, var, row):
+        tk.Label(form, text=text, font=("Segoe UI", 16),
+                 bg="white").grid(row=row, column=0, sticky="w", pady=15)
+        tk.Scale(form, from_=1, to=10, orient="horizontal",
+                 variable=var, length=300,
+                 bg="white", highlightthickness=0)\
+            .grid(row=row, column=1, padx=20)
 
-    # --- Log Display ---
-    tk.Label(card, text="Daily Logs", font=("Arial", 14, "bold"), bg="white").pack(pady=10)
+    slider_row("Mood 😊", mood_var, 0)
+    slider_row("Stress 😰", stress_var, 1)
+    slider_row("Sleep 😴", sleep_var, 2)
+    slider_row("Energy ⚡", energy_var, 3)
 
-    log_list = tk.Listbox(card, width=70, height=10, font=("Arial", 11), bd=2, relief="ridge")
-    log_list.pack(pady=10)
+    def save_log():
+        record = {
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "mood": mood_var.get(),
+            "stress": stress_var.get(),
+            "sleep": sleep_var.get(),
+            "energy": energy_var.get()
+        }
 
-    # --- Add Log Function ---
-    def add_log():
-        mood = mood_entry.get()
-        sleep = sleep_entry.get()
-        meal = meal_entry.get()
+        logs = load_wellness()
+        logs.append(record)
+        save_wellness(logs)
 
-        if mood == "" or sleep == "" or meal == "":
-            messagebox.showerror("Error", "Please fill in all fields.")
-            return
+        messagebox.showinfo(
+            "Saved",
+            "Wellness log saved successfully 🌱"
+        )
 
-        log_list.insert(tk.END, f"Mood: {mood} | Sleep: {sleep} hrs | Meals: {meal}")
+    tk.Button(container, text="💾 Save Log",
+              font=("Segoe UI", 16),
+              bg="#4caf50", fg="white",
+              padx=20, pady=5,
+              command=save_log).pack(pady=20)
 
-        mood_entry.delete(0, tk.END)
-        sleep_entry.delete(0, tk.END)
-        meal_entry.delete(0, tk.END)
-
-    # --- Add Log Button ---
-    tk.Button(card, text="Add Log", width=15, height=1,
-              bg="#6fa8dc", fg="white", font=("Arial", 12, "bold"),
-              relief="flat", command=add_log).pack(pady=10)
-
-    # --- Back Button ---
-    tk.Button(root, text="🔙 Back to Main Menu", width=25,
-              bg="#444444", fg="white", font=("Arial", 12),
-              command=lambda: main_menu(root)).pack(pady=15)
+    tk.Button(container, text="🔙 Back to Main Menu",
+              font=("Segoe UI", 14),
+              bg="#dcdcdc",
+              padx=20, pady=5,
+              command=main_menu).pack(pady=10)
