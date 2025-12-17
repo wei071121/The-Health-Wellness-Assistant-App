@@ -6,49 +6,74 @@ from wellness_page import wellness_page
 from step_counter_page import step_counter_page
 
 
-def clear_window(root):
+# =====================================================
+# MAIN APP WINDOW
+# =====================================================
+root = tk.Tk()
+root.title("Personal Health Management System")
+root.geometry("900x600")
+root.configure(bg="#f5f7fa")
+
+
+# =====================================================
+# CLEAR WINDOW
+# =====================================================
+def clear_window():
     for widget in root.winfo_children():
         widget.destroy()
 
 
+# =====================================================
+# MAIN MENU
+# =====================================================
 def main_menu():
-    clear_window(root)
-    root.configure(bg="#c9d6ff")
+    clear_window()
 
-    tk.Label(root, text="Health & Wellness Assistant",
-             font=("Segoe UI", 36, "bold"),
-             bg="#c9d6ff").pack(pady=30)
+    container = tk.Frame(root, bg="#f5f7fa")
+    container.pack(expand=True, fill="both")
 
-    btn_style = {
-        "font": ("Segoe UI", 14),
-        "width": 25,
-        "height": 2,
-        "bg": "#6fa8dc",
-        "fg": "white"
-    }
+    tk.Label(container,
+             text="Personal Health Management System 🏥",
+             font=("Segoe UI", 28, "bold"),
+             bg="#f5f7fa").pack(pady=40)
 
-    tk.Button(root, text="BMI & Calorie Calculator",
-              command=lambda: BMI_page(root, main_menu), **btn_style).pack(pady=10)
+    card = tk.Frame(container, bg="white", padx=50, pady=40)
+    card.pack()
 
-    tk.Button(root, text="Medication Reminder",
-              command=lambda: medication_page(root, main_menu), **btn_style).pack(pady=10)
+    def menu_button(text, command):
+        tk.Button(card,
+                  text=text,
+                  font=("Segoe UI", 18),
+                  width=22,
+                  pady=10,
+                  bg="#4da6ff",
+                  fg="white",
+                  relief="flat",
+                  command=command).pack(pady=12)
 
-    tk.Button(root, text="Daily Wellness Log",
-              command=lambda: wellness_page(root, main_menu), **btn_style).pack(pady=10)
+    menu_button("BMI Calculator ⚖️",
+                lambda: BMI_page(root, main_menu))
 
-    tk.Button(root, text="Step Counter Log",
-              command=lambda: step_counter_page(root, main_menu), **btn_style).pack(pady=10)
+    menu_button("Medication Reminder 💊",
+                lambda: medication_page(root, main_menu))
 
-    tk.Button(root, text="Exit",
-              command=root.destroy,
-              bg="#e74c3c", fg="white",
+    menu_button("Daily Wellness Log 🌱",
+                lambda: wellness_page(root, main_menu))
+
+    menu_button("Step Counter 🚶‍♂️",
+                lambda: step_counter_page(root, main_menu))
+
+    tk.Button(container,
+              text="❌ Exit",
               font=("Segoe UI", 14),
-              width=25, height=2).pack(pady=30)
+              bg="#e0e0e0",
+              padx=20,
+              pady=5,
+              command=root.quit).pack(pady=30)
 
 
-root = tk.Tk()
-root.title("Health & Wellness Assistant")
-root.geometry("820x550")
-
+# =====================================================
+# START APP
+# =====================================================
 main_menu()
 root.mainloop()
