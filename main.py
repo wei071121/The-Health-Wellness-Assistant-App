@@ -1,9 +1,9 @@
 import tkinter as tk
 
-from bmi_page import BMI_page
-from medication_page import medication_page
-from wellness_page import wellness_page
-from step_counter_page import step_counter_page
+from bmi_calculator import BMI_page
+from medication_reminder import medication_page
+from wellness_log import wellness_page
+from step_counter import step_counter_page
 
 
 # =====================================================
@@ -77,3 +77,4 @@ def main_menu():
 # =====================================================
 main_menu()
 root.mainloop()
+
