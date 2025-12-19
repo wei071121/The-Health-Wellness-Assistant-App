@@ -1,75 +1,86 @@
 import tkinter as tk
-from datetime import datetime
 from tkinter import messagebox
+from datetime import datetime
+from storage import load_step_logs, save_step_logs
+from utils import clear_window
 
-from storage import load_steps, save_steps
+# =====================================================
+# STEP COUNTER LOG PAGE
+# =====================================================
+def step_counter_page(root, main_menu_callback):
+    clear_window(root)
+    root.configure(bg="#c9d6ff")
 
+    tk.Label(root, text="Step Counter Log", font=("Segoe UI", 22, "bold"),
+             bg="#c9d6ff").pack(pady=20)
 
-def step_counter_page(root, main_menu):
-    # =====================================================
-    # CLEAR WINDOW
-    # =====================================================
-    for widget in root.winfo_children():
-        widget.destroy()
+    card = tk.Frame(root, bg="white", padx=30, pady=30)
+    card.pack(pady=20)
+    card.configure(highlightbackground="#d0d0d0", highlightthickness=1)
 
-    root.configure(bg="#f3f6fb")
+    frame = tk.Frame(card, bg="white")
+    frame.pack(pady=10)
 
-    steps = tk.IntVar(value=0)
+    tk.Label(frame, text="Steps Today:", font=("Segoe UI", 14),
+             bg="white").grid(row=0, column=0, padx=10, pady=10)
+    
+    def validate_numeric_input(char):
+        return char.isdigit()
+    
+    vcmd = (root.register(validate_numeric_input), '%S')
+    
+    step_entry = tk.Entry(frame, width=20, font=("Segoe UI", 14),
+                          bd=2, relief="groove", validate="key",
+                          validatecommand=vcmd)
+    step_entry.grid(row=0, column=1, pady=10)
 
-    frame = tk.Frame(root, bg="white", padx=40, pady=40)
-    frame.place(relx=0.5, rely=0.5, anchor="center")
+    tk.Label(card, text="Step Log Records", font=("Segoe UI", 14, "bold"),
+             bg="white").pack(pady=10)
 
-    tk.Label(frame, text="Step Counter 🚶‍♂️",
-             font=("Segoe UI", 26, "bold"),
-             bg="white").pack(pady=(0, 20))
+    log_list = tk.Listbox(card, width=50, height=8,
+                          font=("Segoe UI", 12), bd=2, relief="ridge")
+    log_list.pack(pady=10)
 
-    step_label = tk.Label(frame, textvariable=steps,
-                          font=("Segoe UI", 40, "bold"),
-                          bg="white", fg="#1e88e5")
-    step_label.pack(pady=10)
+    # Load existing steps
+    steps = load_step_logs()
+    for step in steps:
+        log_list.insert(tk.END, step)
 
-    def add_steps(amount):
-        steps.set(steps.get() + amount)
+    def add_steps():
+        steps = step_entry.get()
+        
+        if steps == "":
+            messagebox.showerror("Error", "Please enter the number of steps.")
+            step_entry.focus_set()
+            return
+        
+        try:
+            steps_num = int(steps)
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+            log_text = f"[{timestamp}] Steps: {steps_num:,}"
+            log_list.insert(tk.END, log_text)
+            
+            # Save to file
+            steps.append(log_text)
+            save_step_logs(steps)
+            
+            step_entry.delete(0, tk.END)
+            
+            if steps_num >= 10000:
+                messagebox.showinfo("Great Job!", f"🎉 Excellent! {steps_num:,} steps is amazing!")
+            
+        except ValueError:
+            messagebox.showerror("Invalid Input", 
+                                "❌ Error: Please enter numbers only!\n"
+                                "Example: 5000, 10000, 7500\n"
+                                "Letters and symbols are not allowed.")
+            step_entry.delete(0, tk.END)
+            step_entry.focus_set()
 
-    btn_frame = tk.Frame(frame, bg="white")
-    btn_frame.pack(pady=20)
+    tk.Button(card, text="Add Steps", font=("Segoe UI", 14),
+              bg="#6fa8dc", fg="white", padx=20, pady=5,
+              relief="flat", command=add_steps).pack(pady=10)
 
-    tk.Button(btn_frame, text="+100",
-              font=("Segoe UI", 16),
-              width=8,
-              command=lambda: add_steps(100)).grid(row=0, column=0, padx=10)
-
-    tk.Button(btn_frame, text="+500",
-              font=("Segoe UI", 16),
-              width=8,
-              command=lambda: add_steps(500)).grid(row=0, column=1, padx=10)
-
-    tk.Button(btn_frame, text="+1000",
-              font=("Segoe UI", 16),
-              width=8,
-              command=lambda: add_steps(1000)).grid(row=0, column=2, padx=10)
-
-    def save_today():
-        data = load_steps()
-        data.append({
-            "date": datetime.now().strftime("%Y-%m-%d"),
-            "steps": steps.get()
-        })
-        save_steps(data)
-
-        messagebox.showinfo(
-            "Saved",
-            "Today's steps saved successfully 🚶"
-        )
-
-    tk.Button(frame, text="💾 Save Today",
-              font=("Segoe UI", 16),
-              bg="#1e88e5", fg="white",
-              padx=20, pady=5,
-              command=save_today).pack(pady=15)
-
-    tk.Button(frame, text="🔙 Back to Main Menu",
-              font=("Segoe UI", 14),
-              bg="#e0e0e0",
-              padx=20, pady=5,
-              command=main_menu).pack(pady=10)
+    tk.Button(root, text="🔙 Back to Main Menu", font=("Segoe UI", 14),
+              bg="#444444", fg="white", padx=20, pady=5,
+              command=lambda: main_menu_callback(root)).pack(pady=15)
