@@ -1,30 +1,32 @@
 import tkinter as tk
-import time
-from utils import clear_window, darken_color
+from utils import clear_window
+from bmi_calculator import BMI_page
+from medication_reminder import medication_page
+from wellness_log import wellness_page
+from step_counter import step_counter_page
+from storage import load_reminders
+from datetime import datetime
+from tkinter import messagebox
 
-def create_glowing_title(root, text):
-    """Create glowing title effect"""
-    shadow_colors = ["#a0c4ff", "#b0d0ff", "#c0e0ff"]
-    for i, color in enumerate(shadow_colors):
-        tk.Label(root, text=text,
-                 font=("Segoe UI", 28, "bold"),
-                 fg=color,
-                 bg="#c9d6ff").place(relx=0.5, y=60+i*2, anchor="center")
-    
-    tk.Label(root, text=text,
-             font=("Segoe UI", 28, "bold"),
-             fg="black",
-             bg="#c9d6ff").place(relx=0.5, y=60, anchor="center")
+# Global variable for reminder checking
+reminder_checking_active = False
 
+# ============================
+# MAIN MENU WINDOW
+# ============================
 def main_menu(root):
     clear_window(root)
     root.configure(bg="#c9d6ff")
     
-    # Full-width header
+    # Start reminder checking if not already running
+    global reminder_checking_active
+    if not reminder_checking_active:
+        check_reminders_from_main(root)
+        reminder_checking_active = True
+    
     header_frame = tk.Frame(root, bg="#c9d6ff", height=120)
     header_frame.pack(fill="x", padx=40, pady=(20, 0))
     
-    # Title that spans width
     tk.Label(header_frame, text="Health & Wellness Assistant", 
              font=("Segoe UI", 36, "bold"),
              fg="#2c3e50",
@@ -35,59 +37,44 @@ def main_menu(root):
              fg="#5a7cff",
              bg="#c9d6ff").pack(pady=(5, 0))
     
-    # Decorative line under title
     tk.Frame(root, height=2, bg="#6fa8dc", bd=0).pack(fill="x", padx=80, pady=(10, 0))
     
-    # Main content area - takes most of the screen
     content_frame = tk.Frame(root, bg="#d8e3ff")
     content_frame.pack(fill="both", expand=True, padx=40, pady=30)
     
-    # Features section title
     tk.Label(content_frame, text="Health Management Tools",
              font=("Segoe UI", 24, "bold"),
              bg="#d8e3ff",
              fg="#2c3e50").pack(pady=(20, 30))
     
-    # Container for feature cards
     cards_container = tk.Frame(content_frame, bg="#d8e3ff")
     cards_container.pack(fill="both", expand=True)
     
-    # Import page functions
-    from bmi_calculator import BMI_page
-    from medication_reminder import medication_page
-    from wellness_log import wellness_page
-    from step_counter import step_counter_page
-    
-    # Feature cards in a single row
     features = [
         ("📊", "BMI & Calorie\nCalculator", 
          "Calculate BMI and daily\ncalorie requirements", 
-         lambda: BMI_page(root), "#6fa8dc"),
+         lambda: BMI_page(root, main_menu), "#6fa8dc"),
         ("⏰", "Medication\nReminder", 
          "Set and manage\nmedication reminders", 
-         lambda: medication_page(root), "#6fa8dc"),
+         lambda: medication_page(root, main_menu), "#6fa8dc"),
         ("📝", "Daily Wellness\nLog", 
          "Track your daily wellness\nand mood", 
-         lambda: wellness_page(root), "#6fa8dc"),
+         lambda: wellness_page(root, main_menu), "#6fa8dc"),
         ("👣", "Step Counter\nLog", 
          "Log and monitor\ndaily steps", 
-         lambda: step_counter_page(root), "#6fa8dc"),
+         lambda: step_counter_page(root, main_menu), "#6fa8dc"),
     ]
     
-    # Create cards in a row
     for i, (icon, title, description, command, color) in enumerate(features):
         card_frame = tk.Frame(cards_container, bg="#d8e3ff")
         card_frame.pack(side="left", fill="both", expand=True, padx=15)
         
-        # Card with shadow effect
         card = tk.Frame(card_frame, bg="white", width=200, height=250)
         card.pack_propagate(False)
         card.pack()
         
-        # Card styling
         card.config(highlightbackground="#b8c9ff", highlightthickness=2)
         
-        # Card content
         tk.Label(card, text=icon, font=("Segoe UI", 42),
                 bg="white", fg=color).pack(pady=(30, 10))
         
@@ -97,7 +84,6 @@ def main_menu(root):
         tk.Label(card, text=description, font=("Segoe UI", 11),
                 bg="white", fg="#666666", wraplength=180).pack(pady=10, padx=10)
         
-        # Card button
         card_btn = tk.Button(card, text="Open Feature →",
                            font=("Segoe UI", 11, "bold"),
                            bg=color,
@@ -108,11 +94,10 @@ def main_menu(root):
                            command=command)
         card_btn.pack(pady=20)
         
-        # Hover effects for entire card
         def on_enter_card(e, c=card, b=card_btn, col=color):
             c.config(bg="#f8faff")
             c.config(highlightbackground=col)
-            b.config(bg=darken_color(col, 20))
+            b.config(bg="#5a96d9")
             b.config(cursor="hand2")
             c.config(cursor="hand2")
         
@@ -127,29 +112,30 @@ def main_menu(root):
         card_btn.bind("<Leave>", on_leave_card)
         card.bind("<Button-1>", lambda e, cmd=command: cmd())
     
-    # Bottom section with exit button
     bottom_frame = tk.Frame(root, bg="#c9d6ff", height=100)
     bottom_frame.pack(side="bottom", fill="x", padx=40, pady=(0, 20))
     
-    # Decorative line above exit button
     tk.Frame(bottom_frame, height=2, bg="#6fa8dc", bd=0).pack(fill="x", pady=(0, 20))
     
-    # Centered exit button
     btn_frame = tk.Frame(bottom_frame, bg="#c9d6ff")
     btn_frame.pack()
     
-    exit_btn = tk.Button(btn_frame, text="🚪 Exit Application",
+    exit_btn = tk.Button(btn_frame, text="⏻ Exit Application",
                         font=("Segoe UI", 14, "bold"),
                         bg="#e74c3c",
                         fg="white",
-                        width=25,
+                        width=20,
                         height=2,
                         relief="flat",
                         bd=0,
+                        activebackground="#c0392b",
+                        activeforeground="white",
+                        cursor="hand2",
                         command=root.destroy)
     exit_btn.pack()
     
-    # Hover effect for exit button
+    exit_btn.config(highlightbackground="#c0392b", highlightthickness=1)
+    
     def on_enter_exit(e):
         exit_btn.config(bg="#c0392b")
         exit_btn.config(cursor="hand2")
@@ -160,7 +146,6 @@ def main_menu(root):
     exit_btn.bind("<Enter>", on_enter_exit)
     exit_btn.bind("<Leave>", on_leave_exit)
     
-    # Health tip at the bottom
     health_tips = [
         "💡 Tip: Drink 8 glasses of water daily for optimal health",
         "💡 Tip: Aim for 7-9 hours of sleep each night",
@@ -175,7 +160,6 @@ def main_menu(root):
                         fg="#5a7cff")
     tip_label.pack(pady=(15, 0))
     
-    # Rotate tips
     def rotate_tip():
         current = tip_label.cget("text")
         index = health_tips.index(current) if current in health_tips else 0
@@ -184,3 +168,39 @@ def main_menu(root):
         root.after(5000, rotate_tip)
     
     root.after(5000, rotate_tip)
+
+# =====================================================
+# REMINDER CHECKING FROM MAIN MENU
+# =====================================================
+def check_reminders_from_main(root):
+    """Check for reminders from main menu"""
+    from storage import load_reminders
+    from datetime import datetime
+    import time
+    
+    reminders = load_reminders()
+    now = datetime.now()
+    
+    for reminder in reminders:
+        if not reminder.get("on", True):
+            continue
+        
+        try:
+            h, m = map(int, reminder["time"].split(":"))
+            reminder_time = now.replace(hour=h, minute=m, second=0, microsecond=0)
+            
+            # Check if it's time for the reminder (within 1 minute)
+            time_diff = abs((reminder_time - now).total_seconds())
+            if time_diff <= 60:  # Within 1 minute
+                messagebox.showinfo(
+                    "Medication Reminder 💊",
+                    f"Time to take medicine:\n"
+                    f"Medicine: {reminder['name']}\n"
+                    f"Dosage: {reminder['dosage']}\n"
+                    f"Time: {reminder['time']}"
+                )
+        except:
+            pass
+    
+    # Check again every minute
+    root.after(60000, lambda: check_reminders_from_main(root))
