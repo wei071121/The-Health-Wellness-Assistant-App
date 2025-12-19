@@ -1,3 +1,15 @@
+import tkinter as tk
+
+# =====================================================
+# PAGE CLEAR FUNCTION
+# =====================================================
+def clear_window(root):
+    for widget in root.winfo_children():
+        widget.destroy()
+
+# =====================================================
+# TIME VALIDATION
+# =====================================================
 def is_valid_time(t):
     if len(t) != 5 or t[2] != ':':
         return False
