@@ -1,18 +1,14 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime, timedelta
-
 from storage import load_reminders, save_reminders
-from utils import is_valid_time
+from utils import clear_window, is_valid_time
 
-
-def medication_page(root, main_menu):
-    # =====================================================
-    # CLEAR WINDOW (same logic)
-    # =====================================================
-    for widget in root.winfo_children():
-        widget.destroy()
-
+# =====================================================
+# MEDICATION REMINDER PAGE 
+# =====================================================
+def medication_page(root, main_menu_callback):
+    clear_window(root)
     root.configure(bg="#f0f4f8")
 
     class ScheduleApp:
@@ -46,9 +42,7 @@ def medication_page(root, main_menu):
                       foreground=[("selected", "white")])
 
             columns = ("name", "dosage", "time", "on")
-            self.tree = ttk.Treeview(self.frame, columns=columns,
-                                     show="headings", height=14)
-
+            self.tree = ttk.Treeview(self.frame, columns=columns, show="headings", height=14)
             self.tree.heading("name", text="Medicine Name")
             self.tree.heading("dosage", text="Dosage")
             self.tree.heading("time", text="Time")
@@ -68,19 +62,16 @@ def medication_page(root, main_menu):
             btn_frame.pack(pady=20)
 
             tk.Button(btn_frame, text="➕ Add", font=("Arial", 16),
-                      width=10, command=self.open_add_window,
-                      bg="#2980b9", fg="white",
-                      relief="flat").pack(side="left", padx=10)
+                      width=10, command=self.open_add_window, bg="#2980b9",
+                      fg="white", relief="flat").pack(side="left", padx=10)
 
             tk.Button(btn_frame, text="✏️ Edit", font=("Arial", 16),
-                      width=10, command=self.open_edit_window,
-                      bg="#2980b9", fg="white",
-                      relief="flat").pack(side="left", padx=10)
+                      width=10, command=self.open_edit_window, bg="#2980b9",
+                      fg="white", relief="flat").pack(side="left", padx=10)
 
             tk.Button(btn_frame, text="🔙 Back", font=("Arial", 16),
-                      width=10, command=main_menu,
-                      bg="#2980b9", fg="white",
-                      relief="flat").pack(side="left", padx=10)
+                      width=10, command=lambda: main_menu_callback(root), bg="#2980b9",
+                      fg="white", relief="flat").pack(side="left", padx=10)
 
         def update_list(self):
             for row in self.tree.get_children():
@@ -106,44 +97,35 @@ def medication_page(root, main_menu):
                 except:
                     continue
 
-                t = now.replace(hour=h, minute=m,
-                                second=0, microsecond=0)
+                t = now.replace(hour=h, minute=m, second=0, microsecond=0)
                 if t < now:
                     t += timedelta(days=1)
 
                 if soonest is None or t < soonest:
                     soonest = t
                     item = r
-
             return soonest, item
 
         def update_countdown(self):
             next_time, item = self.get_next_reminder()
 
             if next_time:
-                self.label_next.config(
-                    text=f"Next Schedule ⏰: {item['time']}")
+                self.label_next.config(text=f"Next Schedule ⏰: {item['time']}")
                 diff = next_time - datetime.now()
 
                 if diff.total_seconds() <= 1:
-                    messagebox.showinfo(
-                        "Reminder",
-                        f"Time to take medicine 💉:\n"
-                        f"{item['name']} ({item['dosage']})"
-                    )
+                    messagebox.showinfo("Reminder",
+                                        f"Time to take medicine 💉:\n{item['name']} ({item['dosage']})")
                     self.frame.after(1000, self.update_countdown)
                     return
 
                 h = diff.seconds // 3600
                 m = (diff.seconds % 3600) // 60
                 s = diff.seconds % 60
-                self.label_countdown.config(
-                    text=f"Countdown ⏳: {h:02}:{m:02}:{s:02}")
+                self.label_countdown.config(text=f"Countdown ⏳: {h:02}:{m:02}:{s:02}")
             else:
-                self.label_next.config(
-                    text="Next Schedule ⏰: --:--")
-                self.label_countdown.config(
-                    text="Countdown ⏳: --:--:--")
+                self.label_next.config(text="Next Schedule ⏰: --:--")
+                self.label_countdown.config(text="Countdown ⏳: --:--:--")
 
             self.frame.after(1000, self.update_countdown)
 
@@ -153,34 +135,34 @@ def medication_page(root, main_menu):
             win.geometry("420x350")
             win.configure(bg="#f0f4f8")
 
-            tk.Label(win, text="Medicine Name:",
-                     font=("Arial", 16),
-                     bg="#f0f4f8").pack(pady=10)
+            tk.Label(win, text="Medicine Name:", font=("Arial", 16), bg="#f0f4f8").pack(pady=10)
             name_entry = tk.Entry(win, font=("Arial", 16))
             name_entry.pack()
 
-            tk.Label(win, text="Dosage (numbers only):",
-                     font=("Arial", 16),
-                     bg="#f0f4f8").pack(pady=10)
+            tk.Label(win, text="Dosage (numbers only):", font=("Arial", 16), bg="#f0f4f8").pack(pady=10)
             dose_entry = tk.Entry(win, font=("Arial", 16))
             dose_entry.pack()
 
-            tk.Label(win, text="Time (HH:MM):",
-                     font=("Arial", 16),
-                     bg="#f0f4f8").pack(pady=10)
+            tk.Label(win, text="Time (HH:MM):", font=("Arial", 16), bg="#f0f4f8").pack(pady=10)
             time_entry = tk.Entry(win, font=("Arial", 16))
             time_entry.pack()
 
             def validate_dosage(dosage):
+                """Check if dosage contains only numbers and optional units"""
                 dosage = dosage.strip()
                 if not dosage:
                     return False
+                
+                # Split by space to separate numbers from units
                 parts = dosage.split()
                 if len(parts) == 0:
                     return False
+                
+                # First part should be a number
                 first_part = parts[0]
                 if not first_part.replace('.', '', 1).isdigit():
                     return False
+                
                 return True
 
             def save_new():
@@ -189,23 +171,19 @@ def medication_page(root, main_menu):
                 tim = time_entry.get().strip()
 
                 if not name or not dose or not tim:
-                    messagebox.showwarning(
-                        "Error", "All fields required")
+                    messagebox.showwarning("Error", "All fields required")
                     return
-
+                
                 if not validate_dosage(dose):
-                    messagebox.showwarning(
-                        "Error",
-                        "Invalid dosage format!\n"
-                        "Please enter numbers only (e.g., '10' or '5 mg')\n"
-                        "Letters and symbols are not allowed in the number part."
-                    )
+                    messagebox.showwarning("Error", 
+                                         "Invalid dosage format!\n"
+                                         "Please enter numbers only (e.g., '10' or '5 mg')\n"
+                                         "Letters and symbols are not allowed in the number part.")
                     dose_entry.focus_set()
                     return
-
+                
                 if not is_valid_time(tim):
-                    messagebox.showwarning(
-                        "Error", "Invalid time format (HH:MM)")
+                    messagebox.showwarning("Error", "Invalid time format (HH:MM)")
                     return
 
                 self.reminders.append({
@@ -219,9 +197,7 @@ def medication_page(root, main_menu):
                 self.update_list()
                 win.destroy()
 
-            tk.Button(win, text="💾Save",
-                      font=("Arial", 18),
-                      command=save_new).pack(pady=20)
+            tk.Button(win, text="💾Save", font=("Arial", 18), command=save_new).pack(pady=20)
 
         def open_edit_window(self):
             win = tk.Toplevel(self.frame)
@@ -231,18 +207,14 @@ def medication_page(root, main_menu):
 
             names = [r["name"] for r in self.reminders]
 
-            tk.Label(win, text="Select Reminder:",
-                     font=("Arial", 16),
-                     bg="#f0f4f8").pack(pady=10)
-            combo = ttk.Combobox(
-                win, values=names, font=("Arial", 16))
+            tk.Label(win, text="Select Reminder:", font=("Arial", 16), bg="#f0f4f8").pack(pady=10)
+            combo = ttk.Combobox(win, values=names, font=("Arial", 16))
             combo.pack()
 
             def edit_selected():
                 sel = combo.get()
                 if not sel:
-                    messagebox.showwarning(
-                        "Error", "Select one")
+                    messagebox.showwarning("Error", "Select one")
                     return
 
                 for r in self.reminders:
@@ -253,23 +225,14 @@ def medication_page(root, main_menu):
 
             def delete_selected():
                 sel = combo.get()
-                if messagebox.askyesno(
-                        "Confirm Delete",
-                        f"Delete '{sel}'?"):
-                    self.reminders = [
-                        r for r in self.reminders
-                        if r["name"] != sel
-                    ]
+                if messagebox.askyesno("Confirm Delete", f"Delete '{sel}'?"):
+                    self.reminders = [r for r in self.reminders if r["name"] != sel]
                     save_reminders(self.reminders)
                     self.update_list()
                     win.destroy()
 
-            tk.Button(win, text="✏️ Edit",
-                      font=("Arial", 16),
-                      command=edit_selected).pack(pady=10)
-            tk.Button(win, text="🗑 Delete",
-                      font=("Arial", 16),
-                      command=delete_selected).pack(pady=10)
+            tk.Button(win, text="✏️ Edit", font=("Arial", 16), command=edit_selected).pack(pady=10)
+            tk.Button(win, text="🗑 Delete", font=("Arial", 16), command=delete_selected).pack(pady=10)
 
         def edit_item_window(self, item):
             win = tk.Toplevel(self.frame)
@@ -277,46 +240,38 @@ def medication_page(root, main_menu):
             win.geometry("420x360")
             win.configure(bg="#f0f4f8")
 
-            tk.Label(win, text="Medicine Name:",
-                     font=("Arial", 16),
-                     bg="#f0f4f8").pack(pady=10)
+            tk.Label(win, text="Medicine Name:", font=("Arial", 16), bg="#f0f4f8").pack(pady=10)
             name_e = tk.Entry(win, font=("Arial", 16))
             name_e.insert(0, item["name"])
             name_e.pack()
 
-            tk.Label(win, text="Dosage (numbers only):",
-                     font=("Arial", 16),
-                     bg="#f0f4f8").pack(pady=10)
+            tk.Label(win, text="Dosage (numbers only):", font=("Arial", 16), bg="#f0f4f8").pack(pady=10)
             dose_e = tk.Entry(win, font=("Arial", 16))
             dose_e.insert(0, item["dosage"])
             dose_e.pack()
 
-            tk.Label(win, text="Time (HH:MM):",
-                     font=("Arial", 16),
-                     bg="#f0f4f8").pack(pady=10)
+            tk.Label(win, text="Time (HH:MM):", font=("Arial", 16), bg="#f0f4f8").pack(pady=10)
             time_e = tk.Entry(win, font=("Arial", 16))
             time_e.insert(0, item["time"])
             time_e.pack()
 
-            on_var = tk.BooleanVar(
-                value=item.get("on", True))
-            tk.Checkbutton(
-                win, text="Enabled Reminder",
-                variable=on_var,
-                font=("Arial", 14),
-                bg="#f0f4f8"
-            ).pack(pady=10)
+            on_var = tk.BooleanVar(value=item.get("on", True))
+            tk.Checkbutton(win, text="Enabled Reminder",
+                           variable=on_var, font=("Arial", 14), bg="#f0f4f8").pack(pady=10)
 
             def validate_dosage(dosage):
                 dosage = dosage.strip()
                 if not dosage:
                     return False
+                
                 parts = dosage.split()
                 if len(parts) == 0:
                     return False
+                
                 first_part = parts[0]
                 if not first_part.replace('.', '', 1).isdigit():
                     return False
+                
                 return True
 
             def save_edit():
@@ -325,22 +280,19 @@ def medication_page(root, main_menu):
                 tim = time_e.get().strip()
 
                 if not name or not dose or not tim:
-                    messagebox.showwarning(
-                        "Error", "All fields required")
+                    messagebox.showwarning("Error", "All fields required")
                     return
-
+                
                 if not validate_dosage(dose):
-                    messagebox.showwarning(
-                        "Error",
-                        "Invalid dosage format!\n"
-                        "Please enter numbers only (e.g., '10' or '5 mg')"
-                    )
+                    messagebox.showwarning("Error", 
+                                         "Invalid dosage format!\n"
+                                         "Please enter numbers only (e.g., '10' or '5 mg')\n"
+                                         "Letters and symbols are not allowed in the number part.")
                     dose_e.focus_set()
                     return
-
+                
                 if not is_valid_time(tim):
-                    messagebox.showwarning(
-                        "Error", "Invalid time")
+                    messagebox.showwarning("Error", "Invalid time")
                     return
 
                 item["name"] = name
@@ -352,8 +304,9 @@ def medication_page(root, main_menu):
                 self.update_list()
                 win.destroy()
 
-            tk.Button(win, text="💾Save Changes",
-                      font=("Arial", 18),
+            tk.Button(win, text="💾Save Changes", font=("Arial", 18),
                       command=save_edit).pack(pady=20)
 
     ScheduleApp(root)
+   
+
